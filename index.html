@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KASIR APOTIK</title>
+    <title>KASIR APOTIK PRO</title>
     <style>
-        /* === STYLE UTAMA (TIDAK DISENTUH) === */
+        /* === STYLE UTAMA (TIDAK BERUBAH) === */
         body { font-family: 'Courier New', Courier, monospace; background: #e0e0e0; padding: 20px; }
         .box { max-width: 750px; margin: 0 auto; background: #fff; padding: 25px; border: 3px solid #000; box-shadow: 5px 5px 0px #000; }
         h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 0; }
@@ -84,8 +84,8 @@
     </div>
 
     <div id="screen-login" class="box">
-        <h2>Kasir Apotik</h2>
-        <input type="text" id="login-user" placeholder="Username">
+        <h2>LOGIN SYSTEM</h2>
+        <input type="text" id="login-user" placeholder="Username (admin/kasir)">
         <input type="password" id="login-pass" placeholder="Password">
         <button id="btn-login" onclick="prosesLogin()">MASUK</button>
         <p id="login-status" style="text-align: center; color: red; font-weight: bold;"></p>
@@ -184,7 +184,7 @@
             }); 
         }
 
-        // === FUNGSI TAMBAH BARANG (CEK STOK DISINI) ===
+        // === FUNGSI TAMBAH BARANG (CEK STOK) ===
         function tambahBarang() {
             const input = document.getElementById('input-id'); 
             const produk = productDatabase.find(p => p.id == input.value);
@@ -193,122 +193,37 @@
                 const ada = cart.find(i => i.id == input.value);
                 const currentQty = ada ? ada.qty : 0;
                 
-                // === CEK STOK SEBELUM NAMBAH ===
                 if (currentQty + 1 > produk.stock) {
                     alert("STOK HABIS! Sisa Stok: " + produk.stock);
-                    input.value = ""; 
-                    return; // Batalkan penambahan
+                    input.value = ""; return; 
                 }
                 
                 if(ada) ada.qty++; 
                 else cart.push({...produk, qty:1}); 
                 
-                renderCart(); 
-                input.value = ""; input.focus(); 
+                renderCart(); input.value = ""; input.focus(); 
             } else { 
                 alert("404 Not Found"); 
             }
         }
 
-        // === FUNGSI UPDATE QTY (CEK STOK JUGA DISINI) ===
+        // === FUNGSI UPDATE QTY (CEK STOK) ===
         function updateQty(idx, num) { 
             const item = cart[idx];
-            
-            // Cek Stok Asli di Database
             const dbProduct = productDatabase.find(p => p.id == item.id);
             
-            // Jika mau nambah (+1), cek dulu stoknya
             if (num > 0) {
                 if (item.qty + 1 > dbProduct.stock) {
                     alert("MELEBIHI STOK! Sisa Stok: " + dbProduct.stock);
-                    return; // Batalkan penambahan
+                    return; 
                 }
             }
-            
             cart[idx].qty += num; 
             if(cart[idx].qty < 1) cart[idx].qty = 1; 
             renderCart(); 
         }
 
-        // === FUNGSI LAINNYA (TIDAK BERUBAH) ===
-        function prosesLogin() {
-            const user = document.getElementById('login-user').value.toLowerCase(); 
-            const pass = document.getElementById('login-pass').value;
-            if(!user || !pass) return alert("Isi lengkap!");
-            if (!accountsDb[user]) return document.getElementById('login-status').innerText = "User tidak ditemukan";
-            
-            const inputHash = btoa(pass); 
-            if (accountsDb[user] === inputHash) {
-                currentUser = user;
-                adminHash = accountsDb['admin']; // Simpan hash admin untuk fitur hapus
-                enterApp();
-                backgroundLog(user, "LOGIN");
-            } else {
-                document.getElementById('login-status').innerText = "Password Salah!";
-            }
-        }
-
-        function enterApp() {
-            document.getElementById('screen-login').classList.add('hidden');
-            document.getElementById('screen-app').classList.remove('hidden');
-            document.getElementById('user-badge').innerText = "KASIR: " + currentUser.toUpperCase();
-            document.getElementById('input-id').focus();
-        }
-
-        function backgroundLog(user, activity) {
-            fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'log_activity', username: user, activity: activity }) });
-        }
-
-        function mintaHapus(index) {
-            if (currentUser === 'admin') {
-                if(confirm("Hapus item?")) { cart.splice(index, 1); renderCart(); }
-            } else {
-                itemToDeleteIndex = index;
-                document.getElementById('admin-pass-input').value = ""; 
-                document.getElementById('modal-pass').classList.remove('hidden');
-                document.getElementById('admin-pass-input').focus();
-            }
-        }
-
-        function konfirmasiHapusCepat() {
-            const pass = document.getElementById('admin-pass-input').value;
-            if(!pass) return;
-            const inputHash = btoa(pass);
-            if (inputHash === adminHash) {
-                cart.splice(itemToDeleteIndex, 1); renderCart(); closeModal('modal-pass');
-            } else {
-                alert("PASSWORD SALAH!"); document.getElementById('admin-pass-input').value = "";
-            }
-        }
-
-        function cekMetodeBayar() {
-            if (cart.length === 0) return alert("Keranjang Kosong!");
-            const payMethod = document.getElementById('payment-method').value;
-            if (payMethod === 'CASH') {
-                document.getElementById('modal-cash').classList.remove('hidden');
-                document.getElementById('cash-total-label').innerText = "Rp " + grandTotal.toLocaleString();
-                document.getElementById('cash-input').value = "";
-                document.getElementById('cash-change-label').innerText = "Rp 0";
-                document.getElementById('btn-process-cash').disabled = true;
-                document.getElementById('cash-input').focus();
-            } else {
-                uangTunai = grandTotal; uangKembali = 0; prosesTransaksiFinal(false);
-            }
-        }
-
-        function hitungKembalian() {
-            const inputVal = document.getElementById('cash-input').value;
-            uangTunai = Number(inputVal);
-            uangKembali = uangTunai - grandTotal;
-            document.getElementById('cash-change-label').innerText = "Rp " + uangKembali.toLocaleString();
-            const btn = document.getElementById('btn-process-cash');
-            if (uangTunai >= grandTotal) {
-                document.getElementById('cash-change-label').style.color = "blue"; btn.disabled = false; btn.style.background = "#000";
-            } else {
-                document.getElementById('cash-change-label').style.color = "red"; btn.disabled = true; btn.style.background = "#555";
-            }
-        }
-
+        // === PROSES TRANSAKSI (UPDATE STOK LOKAL DISINI!) ===
         function prosesTransaksiFinal(isCash) {
             if (isCash) closeModal('modal-cash');
             const btn = document.getElementById('btn-bayar');
@@ -327,6 +242,17 @@
             .then(res => res.json())
             .then(response => {
                 if(response.status === 'success') {
+                    
+                    // === PERBAIKAN BUG DISINI ===
+                    // KURANGI STOK LOKAL SECARA MANUAL AGAR TRANSAKSI BERIKUTNYA UPDATED
+                    cart.forEach(cartItem => {
+                        const dbItem = productDatabase.find(p => p.id == cartItem.id);
+                        if (dbItem) {
+                            dbItem.stock = dbItem.stock - cartItem.qty; // Kurangi Stok di Memori Browser
+                        }
+                    });
+                    // ==============================
+
                     btn.innerText = "MENCETAK...";
                     siapkanStruk(payMethod, trxId);
                     setTimeout(() => {
@@ -343,36 +269,61 @@
             });
         }
 
+        // === FUNGSI LAINNYA ===
+        function prosesLogin() {
+            const user = document.getElementById('login-user').value.toLowerCase(); 
+            const pass = document.getElementById('login-pass').value;
+            if(!user || !pass) return alert("Isi lengkap!");
+            if (!accountsDb[user]) return document.getElementById('login-status').innerText = "User tidak ditemukan";
+            
+            const inputHash = btoa(pass); 
+            if (accountsDb[user] === inputHash) {
+                currentUser = user; adminHash = accountsDb['admin']; enterApp(); backgroundLog(user, "LOGIN");
+            } else {
+                document.getElementById('login-status').innerText = "Password Salah!";
+            }
+        }
+        function enterApp() { document.getElementById('screen-login').classList.add('hidden'); document.getElementById('screen-app').classList.remove('hidden'); document.getElementById('user-badge').innerText = "KASIR: " + currentUser.toUpperCase(); document.getElementById('input-id').focus(); }
+        function backgroundLog(user, activity) { fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'log_activity', username: user, activity: activity }) }); }
+        
+        function mintaHapus(index) {
+            if (currentUser === 'admin') { if(confirm("Hapus item?")) { cart.splice(index, 1); renderCart(); } } 
+            else { itemToDeleteIndex = index; document.getElementById('admin-pass-input').value = ""; document.getElementById('modal-pass').classList.remove('hidden'); document.getElementById('admin-pass-input').focus(); }
+        }
+        function konfirmasiHapusCepat() {
+            const pass = document.getElementById('admin-pass-input').value; if(!pass) return;
+            const inputHash = btoa(pass);
+            if (inputHash === adminHash) { cart.splice(itemToDeleteIndex, 1); renderCart(); closeModal('modal-pass'); } 
+            else { alert("PASSWORD SALAH!"); document.getElementById('admin-pass-input').value = ""; }
+        }
+
+        function cekMetodeBayar() {
+            if (cart.length === 0) return alert("Keranjang Kosong!");
+            const payMethod = document.getElementById('payment-method').value;
+            if (payMethod === 'CASH') {
+                document.getElementById('modal-cash').classList.remove('hidden'); document.getElementById('cash-total-label').innerText = "Rp " + grandTotal.toLocaleString(); document.getElementById('cash-input').value = ""; document.getElementById('cash-change-label').innerText = "Rp 0"; document.getElementById('btn-process-cash').disabled = true; document.getElementById('cash-input').focus();
+            } else { uangTunai = grandTotal; uangKembali = 0; prosesTransaksiFinal(false); }
+        }
+        function hitungKembalian() {
+            const inputVal = document.getElementById('cash-input').value; uangTunai = Number(inputVal); uangKembali = uangTunai - grandTotal;
+            document.getElementById('cash-change-label').innerText = "Rp " + uangKembali.toLocaleString();
+            const btn = document.getElementById('btn-process-cash');
+            if (uangTunai >= grandTotal) { document.getElementById('cash-change-label').style.color = "blue"; btn.disabled = false; btn.style.background = "#000"; } 
+            else { document.getElementById('cash-change-label').style.color = "red"; btn.disabled = true; btn.style.background = "#555"; }
+        }
+
         function siapkanStruk(metodeBayar, idTransaksi) {
             const now = new Date();
             const dateStr = now.getDate().toString().padStart(2,'0') + "/" + (now.getMonth()+1).toString().padStart(2,'0') + "/" + now.getFullYear() + " " + now.getHours() + ":" + now.getMinutes();
-            document.getElementById('struk-date').innerText = dateStr;
-            document.getElementById('struk-trx-id').innerText = idTransaksi;
-            document.getElementById('struk-payment').innerText = metodeBayar;
-            
-            const container = document.getElementById('struk-items');
-            container.innerHTML = "";
+            document.getElementById('struk-date').innerText = dateStr; document.getElementById('struk-trx-id').innerText = idTransaksi; document.getElementById('struk-payment').innerText = metodeBayar;
+            const container = document.getElementById('struk-items'); container.innerHTML = "";
             cart.forEach(item => {
                 const subtotal = item.price * item.qty;
-                container.innerHTML += `
-                    <div style="margin-bottom: 2px;">
-                        <div style="font-weight:bold;">${item.name.toUpperCase()}</div>
-                        <table class="print-table">
-                            <tr>
-                                <td class="align-left">${parseInt(item.price).toLocaleString()} x ${item.qty}</td>
-                                <td class="align-right">${subtotal.toLocaleString()}</td>
-                            </tr>
-                        </table>
-                    </div>`;
+                container.innerHTML += `<div style="margin-bottom: 2px;"><div style="font-weight:bold;">${item.name.toUpperCase()}</div><table class="print-table"><tr><td class="align-left">${parseInt(item.price).toLocaleString()} x ${item.qty}</td><td class="align-right">${subtotal.toLocaleString()}</td></tr></table></div>`;
             });
             document.getElementById('struk-total').innerText = "Rp " + grandTotal.toLocaleString();
-            if (metodeBayar === 'CASH') {
-                document.getElementById('label-bayar').innerText = "Tunai:";
-                document.getElementById('val-bayar').innerText = uangTunai.toLocaleString();
-            } else {
-                document.getElementById('label-bayar').innerText = metodeBayar + ":";
-                document.getElementById('val-bayar').innerText = grandTotal.toLocaleString();
-            }
+            if (metodeBayar === 'CASH') { document.getElementById('label-bayar').innerText = "Tunai:"; document.getElementById('val-bayar').innerText = uangTunai.toLocaleString(); } 
+            else { document.getElementById('label-bayar').innerText = metodeBayar + ":"; document.getElementById('val-bayar').innerText = grandTotal.toLocaleString(); }
             document.getElementById('val-kembali').innerText = uangKembali.toLocaleString();
         }
 
@@ -381,27 +332,13 @@
             cart.forEach((item, i) => {
                 grandTotal += (item.price * item.qty);
                 let btnDel = `<button class="btn-delete" onclick="mintaHapus(${i})">X</button>`;
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${item.name}</td>
-                        <td>${parseInt(item.price).toLocaleString()}</td>
-                        <td class="col-qty">
-                            <div class="qty-wrapper">
-                                <button class="btn-qty" onclick="updateQty(${i},-1)">-</button>
-                                <span class="qty-display">${item.qty}</span>
-                                <button class="btn-qty" onclick="updateQty(${i},1)">+</button>
-                            </div>
-                        </td>
-                        <td style="text-align:center;">${btnDel}</td>
-                    </tr>`;
+                tbody.innerHTML += `<tr><td>${item.name}</td><td>${parseInt(item.price).toLocaleString()}</td><td class="col-qty"><div class="qty-wrapper"><button class="btn-qty" onclick="updateQty(${i},-1)">-</button><span class="qty-display">${item.qty}</span><button class="btn-qty" onclick="updateQty(${i},1)">+</button></div></td><td style="text-align:center;">${btnDel}</td></tr>`;
             });
             document.getElementById('total-text').innerText = "Total: Rp " + grandTotal.toLocaleString();
         }
-
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function prosesLogout() { if(!confirm("Keluar?")) return; backgroundLog(currentUser, "LOGOUT"); location.reload(); }
         function handleEnter(e) { if(e.key === "Enter") tambahBarang(); }
     </script>
 </body>
 </html>
-
