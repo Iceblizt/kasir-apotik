@@ -16,9 +16,9 @@
         button:hover { background: #444; }
         button:disabled { background: #555; cursor: wait; }
         
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
-        th, td { border: 1px solid #000; padding: 10px; text-align: left; vertical-align: middle; }
-        th { background: #f0f0f0; }
+        table.app-table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
+        table.app-table th, table.app-table td { border: 1px solid #000; padding: 10px; text-align: left; vertical-align: middle; }
+        table.app-table th { background: #f0f0f0; }
 
         .col-qty { width: 160px; text-align: center; }
         .qty-wrapper { display: flex; align-items: center; justify-content: center; gap: 5px; }
@@ -40,7 +40,7 @@
         }
         .big-text { font-size: 24px; font-weight: bold; margin: 10px 0; display: block; }
 
-        /* === PRINT CSS (DIEDIT BAGIAN LAYOUT BARIS) === */
+        /* === PRINT CSS (METODE TABEL ANTI GAGAL) === */
         #printable-area { display: none; } 
         @media print {
             body * { visibility: hidden; }
@@ -56,22 +56,16 @@
             
             .struk-font { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; color: #000; }
             
-            /* === PERBAIKAN LAYOUT === */
             .text-center { text-align: center; }
             .dashed-line { border-bottom: 1px dashed black; margin: 5px 0; }
             .bold { font-weight: bold; }
             .no-gap { margin: 0; padding: 0; line-height: 1.2; }
 
-            /* CLASS BARU: MEMAKSA KANAN-KIRI SEJAJAR */
-            .print-row {
-                display: flex !important;
-                justify-content: space-between !important; /* Kiri Kanan Mentok */
-                width: 100% !important;
-                margin-bottom: 2px;
-            }
-            
-            /* Khusus Subtotal Item agar Rata Kanan */
-            .text-right { text-align: right; }
+            /* TABEL KHUSUS PRINT (PASTI RAPI) */
+            .print-table { width: 100%; border: none; border-collapse: collapse; margin-bottom: 2px; }
+            .print-table td { padding: 0; border: none; vertical-align: top; }
+            .align-left { text-align: left; }
+            .align-right { text-align: right; }
         }
     </style>
 </head>
@@ -126,7 +120,7 @@
             <button onclick="tambahBarang()" style="width: 30%;">INPUT</button>
         </div>
 
-        <table>
+        <table class="app-table">
             <thead>
                 <tr>
                     <th>Barang</th>
@@ -174,19 +168,23 @@
         
         <div class="dashed-line"></div>
         
-        <div class="print-row bold" style="margin-top: 5px;">
-            <span>TOTAL:</span>
-            <span id="struk-total">0</span>
-        </div>
+        <table class="print-table bold">
+            <tr>
+                <td class="align-left">TOTAL:</td>
+                <td class="align-right"><span id="struk-total">0</span></td>
+            </tr>
+        </table>
         
-        <div class="print-row">
-            <span id="label-bayar">Tunai:</span>
-            <span id="val-bayar">0</span>
-        </div>
-        <div class="print-row">
-            <span>Kembali:</span>
-            <span id="val-kembali">0</span>
-        </div>
+        <table class="print-table">
+            <tr>
+                <td class="align-left" id="label-bayar">Tunai:</td>
+                <td class="align-right" id="val-bayar">0</td>
+            </tr>
+            <tr>
+                <td class="align-left">Kembali:</td>
+                <td class="align-right" id="val-kembali">0</td>
+            </tr>
+        </table>
 
         <div class="dashed-line"></div>
         <br>
@@ -291,14 +289,16 @@
             
             cart.forEach(item => {
                 const subtotal = item.price * item.qty;
-                // PAKAI CLASS BARU 'print-row'
+                // ITEM JUGA PAKAI TABEL AGAR RAPI
                 container.innerHTML += `
                     <div style="margin-bottom: 2px;">
                         <div style="font-weight:bold;">${item.name.toUpperCase()}</div>
-                        <div class="print-row">
-                            <span>${parseInt(item.price).toLocaleString()} x ${item.qty}</span>
-                            <span>${subtotal.toLocaleString()}</span>
-                        </div>
+                        <table class="print-table">
+                            <tr>
+                                <td class="align-left">${parseInt(item.price).toLocaleString()} x ${item.qty}</td>
+                                <td class="align-right">${subtotal.toLocaleString()}</td>
+                            </tr>
+                        </table>
                     </div>`;
             });
             
