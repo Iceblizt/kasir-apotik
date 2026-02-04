@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KASIR APOTIK PRO</title>
     <style>
-        /* === STYLE UTAMA (TIDAK BERUBAH) === */
+        /* === STYLE UTAMA === */
         body { font-family: 'Courier New', Courier, monospace; background: #e0e0e0; padding: 20px; }
         .box { max-width: 750px; margin: 0 auto; background: #fff; padding: 25px; border: 3px solid #000; box-shadow: 5px 5px 0px #000; }
         h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 0; }
@@ -28,6 +28,20 @@
         .btn-delete { background: #d32f2f; color: white; padding: 5px 10px; border: 1px solid #000; width: auto; font-size: 12px; cursor: pointer; }
         .total-box { font-size: 20px; font-weight: bold; text-align: right; padding: 10px; background: #eee; border: 2px solid #000; }
         .status-badge { display: inline-block; padding: 5px 10px; background: #000; color: #fff; font-size: 12px; margin-bottom: 15px; }
+
+        /* === FITUR BARU: AUTOCOMPLETE SUGGESTION === */
+        .autocomplete-wrapper { position: relative; display: flex; gap: 10px; }
+        .suggestion-box {
+            position: absolute; top: 100%; left: 0; right: 30%; /* Sesuaikan dengan tombol input */
+            border: 2px solid #000; border-top: none; z-index: 99;
+            background-color: #fff; max-height: 200px; overflow-y: auto;
+            display: none; /* Hidden by default */
+        }
+        .suggestion-item {
+            padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 14px;
+        }
+        .suggestion-item:hover { background-color: #f0f0f0; font-weight: bold; }
+        .suggestion-item strong { color: blue; }
 
         /* MODAL */
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; justify-content: center; align-items: center; }
@@ -98,9 +112,11 @@
             <button id="btn-logout" onclick="prosesLogout()" style="width: auto; padding: 5px 15px; background: #555;">KELUAR</button>
         </div>
 
-        <div style="display: flex; gap: 10px;">
-            <input type="number" id="input-id" placeholder="Scan/Ketik ID Produk..." onkeypress="handleEnter(event)">
-            <button onclick="tambahBarang()" style="width: 30%;">INPUT</button>
+        <div class="autocomplete-wrapper">
+            <input type="text" id="input-id" placeholder="Ketik Nama / Scan ID..." oninput="cariProduk(this.value)" onkeypress="handleEnter(event)" autocomplete="off">
+            <button onclick="tambahManual()" style="width: 30%;">INPUT</button>
+            
+            <div id="suggestion-list" class="suggestion-box"></div>
         </div>
 
         <table class="app-table">
@@ -184,50 +200,103 @@
             }); 
         }
 
-        // === FUNGSI TAMBAH BARANG (CEK STOK) ===
-        function tambahBarang() {
-            const input = document.getElementById('input-id'); 
-            const produk = productDatabase.find(p => p.id == input.value);
-            
-            if(produk) { 
-                const ada = cart.find(i => i.id == input.value);
-                const currentQty = ada ? ada.qty : 0;
-                
-                if (currentQty + 1 > produk.stock) {
-                    alert("STOK HABIS! Sisa Stok: " + produk.stock);
-                    input.value = ""; return; 
-                }
-                
-                if(ada) ada.qty++; 
-                else cart.push({...produk, qty:1}); 
-                
-                renderCart(); input.value = ""; input.focus(); 
-            } else { 
-                alert("404 Not Found"); 
+        // === LOGIKA AUTOCOMPLETE & PENCARIAN (BARU) ===
+        function cariProduk(keyword) {
+            const list = document.getElementById('suggestion-list');
+            list.innerHTML = "";
+            list.style.display = "none";
+
+            if (!keyword) return;
+
+            // Cari produk berdasarkan Nama (Case Insensitive) ATAU ID
+            const matches = productDatabase.filter(p => 
+                p.name.toLowerCase().includes(keyword.toLowerCase()) || 
+                p.id.toString().includes(keyword)
+            );
+
+            if (matches.length > 0) {
+                list.style.display = "block";
+                matches.forEach(p => {
+                    const div = document.createElement("div");
+                    div.className = "suggestion-item";
+                    div.innerHTML = `<strong>${p.name}</strong> - Stok: ${p.stock}`;
+                    // Saat diklik, langsung tambah ke keranjang
+                    div.onclick = function() {
+                        pilihProduk(p);
+                    };
+                    list.appendChild(div);
+                });
             }
         }
 
-        // === FUNGSI UPDATE QTY (CEK STOK) ===
+        // Fungsi saat saran diklik atau Enter ditekan
+        function pilihProduk(produk) {
+            document.getElementById('suggestion-list').style.display = "none"; // Tutup saran
+            document.getElementById('input-id').value = ""; // Kosongkan input
+            document.getElementById('input-id').focus(); // Balikin kursor
+            prosesTambah(produk);
+        }
+
+        // Tombol Input Manual (Jika user mengetik ID lalu Enter/Klik Tombol)
+        function tambahManual() {
+            const val = document.getElementById('input-id').value;
+            if(!val) return;
+            
+            // Cek Persis ID dulu
+            let produk = productDatabase.find(p => p.id == val);
+            
+            // Jika ID tidak ketemu, Cek Nama Persis (atau yang paling mendekati)
+            if(!produk) {
+                produk = productDatabase.find(p => p.name.toLowerCase() === val.toLowerCase());
+            }
+
+            if(produk) {
+                pilihProduk(produk);
+            } else {
+                alert("Produk tidak ditemukan!");
+            }
+        }
+
+        function handleEnter(e) { 
+            if(e.key === "Enter") {
+                // Cek apakah ada saran yang tampil? Jika ya, ambil yang pertama
+                const list = document.getElementById('suggestion-list');
+                if (list.style.display === "block" && list.firstChild) {
+                    list.firstChild.click(); // Klik saran paling atas
+                } else {
+                    tambahManual(); // Coba cari manual
+                }
+            }
+        }
+
+        // === LOGIKA STOK & KERANJANG (TETAP SAMA) ===
+        function prosesTambah(produk) {
+            const ada = cart.find(i => i.id == produk.id);
+            const currentQty = ada ? ada.qty : 0;
+            
+            if (currentQty + 1 > produk.stock) {
+                alert("STOK HABIS! Sisa Stok: " + produk.stock);
+                return;
+            }
+            
+            if(ada) ada.qty++; 
+            else cart.push({...produk, qty:1}); 
+            
+            renderCart(); 
+        }
+
         function updateQty(idx, num) { 
             const item = cart[idx];
             const dbProduct = productDatabase.find(p => p.id == item.id);
-            
-            if (num > 0) {
-                if (item.qty + 1 > dbProduct.stock) {
-                    alert("MELEBIHI STOK! Sisa Stok: " + dbProduct.stock);
-                    return; 
-                }
-            }
+            if (num > 0 && item.qty + 1 > dbProduct.stock) return alert("MELEBIHI STOK! Sisa: " + dbProduct.stock);
             cart[idx].qty += num; 
             if(cart[idx].qty < 1) cart[idx].qty = 1; 
             renderCart(); 
         }
 
-        // === PROSES TRANSAKSI (UPDATE STOK LOKAL DISINI!) ===
         function prosesTransaksiFinal(isCash) {
             if (isCash) closeModal('modal-cash');
             const btn = document.getElementById('btn-bayar');
-            const originalText = btn.innerText;
             const payMethod = document.getElementById('payment-method').value;
             const now = new Date();
             const uniqueCode = Math.floor(100 + Math.random() * 900);
@@ -242,16 +311,11 @@
             .then(res => res.json())
             .then(response => {
                 if(response.status === 'success') {
-                    
-                    // === PERBAIKAN BUG DISINI ===
-                    // KURANGI STOK LOKAL SECARA MANUAL AGAR TRANSAKSI BERIKUTNYA UPDATED
+                    // UPDATE STOK LOKAL
                     cart.forEach(cartItem => {
                         const dbItem = productDatabase.find(p => p.id == cartItem.id);
-                        if (dbItem) {
-                            dbItem.stock = dbItem.stock - cartItem.qty; // Kurangi Stok di Memori Browser
-                        }
+                        if (dbItem) dbItem.stock -= cartItem.qty;
                     });
-                    // ==============================
 
                     btn.innerText = "MENCETAK...";
                     siapkanStruk(payMethod, trxId);
@@ -265,7 +329,7 @@
             })
             .catch(err => {
                 alert("GAGAL MENYIMPAN! Cek Koneksi.");
-                btn.innerText = originalText; btn.disabled = false; btn.style.background = "#000";
+                btn.innerText = "BAYAR & CETAK STRUK"; btn.disabled = false; btn.style.background = "#000";
             });
         }
 
@@ -275,13 +339,8 @@
             const pass = document.getElementById('login-pass').value;
             if(!user || !pass) return alert("Isi lengkap!");
             if (!accountsDb[user]) return document.getElementById('login-status').innerText = "User tidak ditemukan";
-            
-            const inputHash = btoa(pass); 
-            if (accountsDb[user] === inputHash) {
-                currentUser = user; adminHash = accountsDb['admin']; enterApp(); backgroundLog(user, "LOGIN");
-            } else {
-                document.getElementById('login-status').innerText = "Password Salah!";
-            }
+            if (accountsDb[user] === btoa(pass)) { currentUser = user; adminHash = accountsDb['admin']; enterApp(); backgroundLog(user, "LOGIN"); }
+            else { document.getElementById('login-status').innerText = "Password Salah!"; }
         }
         function enterApp() { document.getElementById('screen-login').classList.add('hidden'); document.getElementById('screen-app').classList.remove('hidden'); document.getElementById('user-badge').innerText = "KASIR: " + currentUser.toUpperCase(); document.getElementById('input-id').focus(); }
         function backgroundLog(user, activity) { fetch(SCRIPT_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify({ action: 'log_activity', username: user, activity: activity }) }); }
@@ -291,9 +350,7 @@
             else { itemToDeleteIndex = index; document.getElementById('admin-pass-input').value = ""; document.getElementById('modal-pass').classList.remove('hidden'); document.getElementById('admin-pass-input').focus(); }
         }
         function konfirmasiHapusCepat() {
-            const pass = document.getElementById('admin-pass-input').value; if(!pass) return;
-            const inputHash = btoa(pass);
-            if (inputHash === adminHash) { cart.splice(itemToDeleteIndex, 1); renderCart(); closeModal('modal-pass'); } 
+            if (btoa(document.getElementById('admin-pass-input').value) === adminHash) { cart.splice(itemToDeleteIndex, 1); renderCart(); closeModal('modal-pass'); } 
             else { alert("PASSWORD SALAH!"); document.getElementById('admin-pass-input').value = ""; }
         }
 
@@ -337,8 +394,6 @@
             document.getElementById('total-text').innerText = "Total: Rp " + grandTotal.toLocaleString();
         }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function prosesLogout() { if(!confirm("Keluar?")) return; backgroundLog(currentUser, "LOGOUT"); location.reload(); }
-        function handleEnter(e) { if(e.key === "Enter") tambahBarang(); }
     </script>
 </body>
 </html>
