@@ -1,233 +1,59 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KASIR APOTIK PRO (FIXED PRINT)</title>
+    <title>KASIR APOTIK PRO (TRX ID)</title>
     <style>
-        /* === GAYA TAMPILAN UTAMA (LAYAR) === */
-        body {
-            font-family: 'Courier New', Courier, monospace;
-            background: #e0e0e0;
-            padding: 20px;
-        }
+        /* === STYLE UTAMA === */
+        body { font-family: 'Courier New', Courier, monospace; background: #e0e0e0; padding: 20px; }
+        .box { max-width: 750px; margin: 0 auto; background: #fff; padding: 25px; border: 3px solid #000; box-shadow: 5px 5px 0px #000; }
+        h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 0; }
+        .hidden { display: none !important; }
+        
+        input, button, select { width: 100%; padding: 12px; margin-bottom: 12px; font-size: 16px; box-sizing: border-box; border: 2px solid #000; }
+        button { background: #000; color: #fff; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        button:hover { background: #444; }
+        button:disabled { background: #555; cursor: wait; }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; margin-bottom: 15px; }
+        th, td { border: 1px solid #000; padding: 10px; text-align: left; vertical-align: middle; }
+        th { background: #f0f0f0; }
 
-        .box {
-            max-width: 750px;
-            margin: 0 auto;
-            background: #fff;
-            padding: 25px;
-            border: 3px solid #000;
-            box-shadow: 5px 5px 0px #000;
-        }
+        /* QTY STYLING */
+        .col-qty { width: 160px; text-align: center; }
+        .qty-wrapper { display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .btn-qty { width: 35px; height: 35px; padding: 0; margin: 0; background: #ddd; color: black; border: 2px solid #000; font-size: 18px; font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .qty-display { display: inline-block; width: 50px; padding: 5px 0; text-align: center; font-size: 18px; font-weight: bold; border-bottom: 2px solid #000; background: #fff; }
 
-        h2 {
-            text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
+        .btn-delete { background: #d32f2f; color: white; padding: 5px 10px; border: 1px solid #000; width: auto; font-size: 12px; cursor: pointer; }
+        .total-box { font-size: 20px; font-weight: bold; text-align: right; padding: 10px; background: #eee; border: 2px solid #000; }
+        .status-badge { display: inline-block; padding: 5px 10px; background: #000; color: #fff; font-size: 12px; margin-bottom: 15px; }
 
-        .hidden {
-            display: none !important;
-        }
-
-        input,
-        button,
-        select {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 12px;
-            font-size: 16px;
-            box-sizing: border-box;
-            border: 2px solid #000;
-        }
-
-        button {
-            background: #000;
-            color: #fff;
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover {
-            background: #444;
-        }
-
-        button:disabled {
-            background: #555;
-            cursor: wait;
-        }
-
-        /* === TABEL PRODUK === */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            margin-bottom: 15px;
-        }
-
-        th,
-        td {
-            border: 1px solid #000;
-            padding: 10px;
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        th {
-            background: #f0f0f0;
-        }
-
-        /* === GAYA QUANTITY === */
-        .col-qty {
-            width: 160px;
-            text-align: center;
-        }
-
-        .qty-wrapper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 5px;
-        }
-
-        .btn-qty {
-            width: 35px;
-            height: 35px;
-            padding: 0;
-            margin: 0;
-            background: #ddd;
-            color: black;
-            border: 2px solid #000;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
-        .qty-display {
-            display: inline-block;
-            width: 50px;
-            padding: 5px 0;
-            text-align: center;
-            font-size: 18px;
-            font-weight: bold;
-            border-bottom: 2px solid #000;
-            background: #fff;
-        }
-
-        .btn-delete {
-            background: #d32f2f;
-            color: white;
-            padding: 5px 10px;
-            border: 1px solid #000;
-            width: auto;
-            font-size: 12px;
-            cursor: pointer;
-        }
-
-        .total-box {
-            font-size: 20px;
-            font-weight: bold;
-            text-align: right;
-            padding: 10px;
-            background: #eee;
-            border: 2px solid #000;
-        }
-
-        .status-badge {
-            display: inline-block;
-            padding: 5px 10px;
-            background: #000;
-            color: #fff;
-            font-size: 12px;
-            margin-bottom: 15px;
-        }
-
-        /* === SETTINGAN KHUSUS CETAK (PERBAIKAN MARGIN) === */
-        #printable-area {
-            display: none;
-        }
-
+        /* === PRINT SETUP === */
+        #printable-area { display: none; } 
         @media print {
-
-            /* 1. Sembunyikan Layout Web */
-            body * {
-                visibility: hidden;
+            body * { visibility: hidden; }
+            #screen-login, #screen-app, .box { display: none !important; }
+            #printable-area, #printable-area * { visibility: visible !important; display: block !important; }
+            #printable-area { 
+                position: absolute; left: 0; top: 0; width: 58mm; 
+                padding-left: 2mm; padding-right: 5mm; box-sizing: border-box; background: white;
             }
-
-            #screen-login,
-            #screen-app,
-            .box {
-                display: none !important;
-            }
-
-            /* 2. Tampilkan Struk */
-            #printable-area,
-            #printable-area * {
-                visibility: visible !important;
-            }
-
-            #printable-area {
-                display: block !important;
-            }
-
-            /* 3. Atur Layout Kertas 58mm */
-            @page {
-                size: 58mm auto;
-                margin: 0mm;
-                /* Margin 0 di settingan printer */
-            }
-
-            #printable-area {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 58mm;
-                /* Lebar Kertas Pas */
-
-                /* === KUNCI PERBAIKAN DISINI === */
-                padding-left: 2mm;
-                /* Jarak aman kiri */
-                padding-right: 5mm;
-                /* Jarak aman kanan (LEBIH BESAR BIAR TIDAK KEPOTONG) */
-                box-sizing: border-box;
-                /* Agar padding dihitung di dalam lebar 58mm */
-                /* ============================== */
-
-                background: white;
-            }
-
-            .struk-font {
-                font-family: 'Courier New', Courier, monospace;
-                font-size: 11px;
-                /* Ukuran font pas untuk 58mm */
-                line-height: 1.2;
-                color: #000;
-            }
-
-            /* Pastikan flexbox tetap jalan saat print untuk baris item */
-            .item-row {
-                display: flex !important;
-                justify-content: space-between !important;
-            }
+            @page { size: 58mm auto; margin: 0mm; }
+            .struk-font { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; color: #000; }
+            .item-row { display: flex !important; justify-content: space-between !important; }
         }
     </style>
 </head>
-
 <body>
 
     <div id="screen-login" class="box">
         <h2>LOGIN SYSTEM</h2>
         <label>Username (admin/kasir):</label>
-        <input type="text" id="login-user" placeholder="Masukkan Username">
+        <input type="text" id="login-user" placeholder="Username">
         <label>Password:</label>
-        <input type="password" id="login-pass" placeholder="Masukkan Password">
+        <input type="password" id="login-pass" placeholder="Password">
         <button id="btn-login" onclick="prosesLogin()">MASUK</button>
         <p id="login-status" style="text-align: center; color: red; font-weight: bold;"></p>
     </div>
@@ -235,8 +61,7 @@
     <div id="screen-app" class="box hidden">
         <div style="display: flex; justify-content: space-between;">
             <span class="status-badge" id="user-badge">USER: -</span>
-            <button id="btn-logout" onclick="prosesLogout()"
-                style="width: auto; padding: 5px 15px; background: #555;">KELUAR</button>
+            <button id="btn-logout" onclick="prosesLogout()" style="width: auto; padding: 5px 15px; background: #555;">KELUAR</button>
         </div>
 
         <div style="display: flex; gap: 10px;">
@@ -257,7 +82,7 @@
         </table>
 
         <div class="total-box" id="total-text">Total: Rp 0</div>
-
+        
         <label style="font-weight: bold; margin-top: 10px; display: block;">Metode Pembayaran:</label>
         <select id="payment-method">
             <option value="CASH">Uang Tunai (CASH)</option>
@@ -266,7 +91,7 @@
             <option value="CREDIT">Kartu Kredit</option>
         </select>
         <br>
-
+        
         <button id="btn-bayar" onclick="transaksiDanPrint()" style="background: #000; height: 50px; font-size: 18px;">
             BAYAR & CETAK STRUK
         </button>
@@ -275,51 +100,112 @@
     <div id="printable-area" class="struk-font">
         <div style="text-align: center; margin-bottom: 10px;">
             <h3 style="margin:0;">APOTIK SEHAT</h3>
-            <span style="font-size: 10px;">Jl. Raya No. 123, Jambi</span><br>
-            -----------------------------
+            <span style="font-size: 10px;">Jl. Raya No. 123, Jakarta</span><br>
+            --------------------------------
         </div>
         <div style="font-size: 10px; margin-bottom: 5px;">
             Tgl: <span id="struk-date"></span><br>
-            Kasir: <span id="struk-kasir"></span><br>
+            <b>No: <span id="struk-trx-id"></span></b><br> Kasir: <span id="struk-kasir"></span><br>
             Bayar: <span id="struk-payment" style="font-weight:bold;"></span>
         </div>
-
+        
         <div style="border-bottom: 1px dashed black; margin-bottom: 5px;"></div>
-
         <div id="struk-items"></div>
-
+        
         <div style="border-top: 1px dashed black; margin-top: 5px; padding-top: 5px; text-align: right;">
             <strong>TOTAL: Rp <span id="struk-total">0</span></strong>
         </div>
-
+        
         <div style="text-align: center; margin-top: 20px; font-size: 10px;">
-            Terima Kasih<br>
-            Semoga Lekas Sembuh
+            *Terima Kasih*<br>
+            *Obat yg dibeli tidak bisa ditukar*
         </div>
     </div>
 
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyMBtB3-CqDV3mjg5Zq5O2WYUI77-q8Pgmn4XWAC1-93iS23j4cefndPFiP2jsVWKO_/exec';
-
-        let productDatabase = [];
+        
+        let productDatabase = []; 
         let cart = [];
         let currentUser = '';
 
-        window.onload = function () { loadProducts(); };
+        window.onload = function() { loadProducts(); };
+        function loadProducts() { fetch(SCRIPT_URL).then(r => r.json()).then(d => productDatabase = d).catch(e => console.log("Offline")); }
 
-        function loadProducts() {
-            fetch(SCRIPT_URL).then(r => r.json()).then(d => productDatabase = d).catch(e => console.log("Offline"));
+        function transaksiDanPrint() {
+            if (cart.length === 0) return alert("Keranjang Kosong!");
+            const btn = document.getElementById('btn-bayar');
+            const originalText = btn.innerText;
+            const payMethod = document.getElementById('payment-method').value;
+            
+            // 1. GENERATE ID TRANSAKSI UNIK (Format: TRX-JamMenitDetik-Acak)
+            const now = new Date();
+            const uniqueCode = Math.floor(100 + Math.random() * 900); // 3 digit acak
+            const trxId = "TRX-" + now.getHours() + now.getMinutes() + now.getSeconds() + "-" + uniqueCode;
+
+            btn.innerText = "PROSES DATA..."; btn.disabled = true; btn.style.background = "#555";
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({ 
+                    action: 'checkout', 
+                    kasir: currentUser, 
+                    items: cart, 
+                    paymentMethod: payMethod,
+                    trxId: trxId // KIRIM ID INI KE SHEET
+                })
+            })
+            .then(res => res.json())
+            .then(response => {
+                if(response.status === 'success') {
+                    btn.innerText = "MENCETAK...";
+                    siapkanStruk(payMethod, trxId); // Pass ID ke Struk
+                    setTimeout(() => {
+                        window.print();
+                        alert("Sukses! No Transaksi: " + trxId);
+                        cart = []; renderCart();
+                        btn.innerText = originalText; btn.disabled = false; btn.style.background = "#000";
+                    }, 500);
+                } else { throw new Error("Gagal"); }
+            })
+            .catch(err => {
+                alert("GAGAL MENYIMPAN! Cek Koneksi.");
+                btn.innerText = originalText; btn.disabled = false; btn.style.background = "#000";
+            });
         }
 
-        function renderCart() {
-            const tbody = document.getElementById('cart-list');
-            tbody.innerHTML = "";
+        function siapkanStruk(metodeBayar, idTransaksi) {
+            const now = new Date();
+            document.getElementById('struk-date').innerText = now.toLocaleString();
+            document.getElementById('struk-trx-id').innerText = idTransaksi; // TAMPILKAN ID
+            document.getElementById('struk-kasir').innerText = currentUser.toUpperCase();
+            document.getElementById('struk-payment').innerText = metodeBayar;
+            
+            const container = document.getElementById('struk-items');
+            container.innerHTML = "";
             let total = 0;
+            
+            cart.forEach(item => {
+                const subtotal = item.price * item.qty;
+                total += subtotal;
+                container.innerHTML += `
+                    <div style="margin-bottom: 5px;">
+                        ${item.name}<br>
+                        <span class="item-row" style="display:flex; justify-content:space-between;">
+                            <span>${item.qty} x ${parseInt(item.price).toLocaleString()}</span>
+                            <span>${subtotal.toLocaleString()}</span>
+                        </span>
+                    </div>`;
+            });
+            document.getElementById('struk-total').innerText = total.toLocaleString();
+        }
 
+        // === LOGIC STANDAR ===
+        function renderCart() {
+            const tbody = document.getElementById('cart-list'); tbody.innerHTML = ""; let total = 0;
             cart.forEach((item, i) => {
                 total += (item.price * item.qty);
                 let btnDel = (currentUser === 'admin') ? `<button class="btn-delete" onclick="hapusItem(${i})">X</button>` : '-';
-
                 tbody.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
@@ -337,110 +223,30 @@
             document.getElementById('total-text').innerText = "Total: Rp " + total.toLocaleString();
         }
 
-        function transaksiDanPrint() {
-            if (cart.length === 0) return alert("Keranjang masih kosong!");
-            const btn = document.getElementById('btn-bayar');
-            const originalText = btn.innerText;
-            const payMethod = document.getElementById('payment-method').value;
-
-            btn.innerText = "MENGHUBUNGKAN DATABASE..."; btn.disabled = true; btn.style.background = "#555";
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'checkout', kasir: currentUser, items: cart, paymentMethod: payMethod })
-            })
-                .then(res => res.json())
-                .then(response => {
-                    if (response.status === 'success') {
-                        btn.innerText = "MENCETAK...";
-                        siapkanStruk(payMethod);
-                        setTimeout(() => {
-                            window.print();
-                            alert("Transaksi Berhasil Disimpan!");
-                            cart = []; renderCart();
-                            btn.innerText = originalText; btn.disabled = false; btn.style.background = "#000";
-                        }, 500);
-                    } else { throw new Error("Gagal Simpan"); }
-                })
-                .catch(err => {
-                    alert("GAGAL MENYIMPAN! Periksa internet.");
-                    btn.innerText = originalText; btn.disabled = false; btn.style.background = "#000";
-                });
-        }
-
-        function siapkanStruk(metodeBayar) {
-            const now = new Date();
-            document.getElementById('struk-date').innerText = now.toLocaleString();
-            document.getElementById('struk-kasir').innerText = currentUser.toUpperCase();
-            document.getElementById('struk-payment').innerText = metodeBayar;
-
-            const container = document.getElementById('struk-items');
-            container.innerHTML = "";
-            let total = 0;
-
-            cart.forEach(item => {
-                const subtotal = item.price * item.qty;
-                total += subtotal;
-                // PENTING: Gunakan class 'item-row' untuk styling flex di print
-                container.innerHTML += `
-                    <div style="margin-bottom: 5px;">
-                        ${item.name}<br>
-                        <span class="item-row" style="display:flex; justify-content:space-between;">
-                            <span>${item.qty} x ${parseInt(item.price).toLocaleString()}</span>
-                            <span>${subtotal.toLocaleString()}</span>
-                        </span>
-                    </div>`;
-            });
-            document.getElementById('struk-total').innerText = total.toLocaleString();
-        }
-
         function prosesLogin() {
-            const user = document.getElementById('login-user').value;
-            const pass = document.getElementById('login-pass').value;
+            const user = document.getElementById('login-user').value; const pass = document.getElementById('login-pass').value;
             const btn = document.getElementById('btn-login');
-            if (!user || !pass) return alert("Isi lengkap!");
-            btn.innerText = "CEK DATABASE..."; btn.disabled = true;
-
+            if(!user || !pass) return alert("Isi lengkap!");
+            btn.innerText = "CEK..."; btn.disabled = true;
             fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'login', username: user, password: pass }) })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.status === 'success') {
-                        currentUser = res.role;
-                        document.getElementById('screen-login').classList.add('hidden');
-                        document.getElementById('screen-app').classList.remove('hidden');
-                        document.getElementById('user-badge').innerText = "KASIR: " + currentUser.toUpperCase();
-                        document.getElementById('input-id').focus();
-                    } else {
-                        document.getElementById('login-status').innerText = "LOGIN GAGAL!";
-                        btn.disabled = false; btn.innerText = "MASUK";
-                    }
-                })
-                .catch(() => { alert("Error Koneksi"); btn.disabled = false; btn.innerText = "MASUK"; });
+            .then(r => r.json()).then(res => {
+                if(res.status === 'success') {
+                    currentUser = res.role;
+                    document.getElementById('screen-login').classList.add('hidden');
+                    document.getElementById('screen-app').classList.remove('hidden');
+                    document.getElementById('user-badge').innerText = "KASIR: " + currentUser.toUpperCase();
+                    document.getElementById('input-id').focus();
+                } else { document.getElementById('login-status').innerText = "GAGAL!"; btn.disabled = false; btn.innerText = "MASUK"; }
+            }).catch(() => { alert("Error"); btn.disabled = false; btn.innerText = "MASUK"; });
         }
-
-        function prosesLogout() {
-            if (!confirm("Keluar?")) return;
-            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'logout', username: currentUser }) })
-                .finally(() => location.reload());
-        }
-
-        function handleEnter(e) { if (e.key === "Enter") tambahBarang(); }
+        function prosesLogout() { if(!confirm("Keluar?")) return; fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'logout', username: currentUser }) }).finally(() => location.reload()); }
+        function handleEnter(e) { if(e.key === "Enter") tambahBarang(); }
         function tambahBarang() {
-            const input = document.getElementById('input-id');
-            const produk = productDatabase.find(p => p.id == input.value);
-            if (produk) {
-                const ada = cart.find(i => i.id == input.value);
-                if (ada) ada.qty++; else cart.push({ ...produk, qty: 1 });
-                renderCart(); input.value = ""; input.focus();
-            } else { alert("Produk 404 Not Found"); }
+            const input = document.getElementById('input-id'); const produk = productDatabase.find(p => p.id == input.value);
+            if(produk) { const ada = cart.find(i => i.id == input.value); if(ada) ada.qty++; else cart.push({...produk, qty:1}); renderCart(); input.value = ""; input.focus(); } else { alert("404 Not Found"); }
         }
-        function updateQty(idx, num) {
-            cart[idx].qty += num;
-            if (cart[idx].qty < 1) cart[idx].qty = 1;
-            renderCart();
-        }
+        function updateQty(idx, num) { cart[idx].qty += num; if(cart[idx].qty < 1) cart[idx].qty = 1; renderCart(); }
         function hapusItem(idx) { cart.splice(idx, 1); renderCart(); }
     </script>
 </body>
-
 </html>
