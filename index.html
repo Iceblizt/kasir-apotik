@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KASIR APOTIK PRO (UI STRUK RAPI)</title>
+    <title>KASIR APOTIK PRO (SECURE)</title>
     <style>
         /* === STYLE UTAMA (LAYAR) === */
         body { font-family: 'Courier New', Courier, monospace; background: #e0e0e0; padding: 20px; }
@@ -29,7 +29,7 @@
         .total-box { font-size: 20px; font-weight: bold; text-align: right; padding: 10px; background: #eee; border: 2px solid #000; }
         .status-badge { display: inline-block; padding: 5px 10px; background: #000; color: #fff; font-size: 12px; margin-bottom: 15px; }
 
-        /* === SETTINGAN PRINT (UPDATED) === */
+        /* === SETTINGAN PRINT === */
         #printable-area { display: none; } 
         @media print {
             body * { visibility: hidden; }
@@ -44,8 +44,6 @@
             @page { size: 58mm auto; margin: 0mm; }
             
             .struk-font { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; color: #000; }
-            
-            /* Class Khusus Layout Rapi */
             .flex-between { display: flex !important; justify-content: space-between !important; }
             .border-dashed { border-bottom: 1px dashed black; margin: 5px 0; }
             .text-right { text-align: right; }
@@ -56,7 +54,7 @@
 <body>
 
     <div id="screen-login" class="box">
-        <h2>Toko Obat</h2>
+        <h2>LOGIN SYSTEM</h2>
         <input type="text" id="login-user" placeholder="Username (admin/kasir)">
         <input type="password" id="login-pass" placeholder="Password">
         <button id="btn-login" onclick="prosesLogin()">MASUK</button>
@@ -116,9 +114,7 @@
         </div>
         
         <div class="border-dashed"></div>
-        
         <div id="struk-items"></div>
-        
         <div class="border-dashed"></div>
         
         <div class="flex-between bold" style="margin-top: 5px;">
@@ -191,8 +187,6 @@
             cart.forEach(item => {
                 const subtotal = item.price * item.qty;
                 total += subtotal;
-                
-                // === FORMAT BARU STRUK ===
                 container.innerHTML += `
                     <div style="margin-bottom: 5px;">
                         <div style="font-weight:bold;">${item.name}</div>
@@ -205,12 +199,13 @@
             document.getElementById('struk-total').innerText = "Rp " + total.toLocaleString();
         }
 
-        // === Logic Render Cart & Login ===
         function renderCart() {
             const tbody = document.getElementById('cart-list'); tbody.innerHTML = ""; let total = 0;
             cart.forEach((item, i) => {
                 total += (item.price * item.qty);
-                let btnDel = (currentUser === 'admin') ? `<button class="btn-delete" onclick="hapusItem(${i})">X</button>` : '-';
+                // Tombol Delete Selalu Muncul
+                let btnDel = `<button class="btn-delete" onclick="hapusItem(${i})">X</button>`;
+                
                 tbody.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
@@ -226,6 +221,39 @@
                     </tr>`;
             });
             document.getElementById('total-text').innerText = "Total: Rp " + total.toLocaleString();
+        }
+
+        // === FUNGSI HAPUS DENGAN VALIDASI ADMIN ===
+        function hapusItem(index) {
+            if (currentUser === 'admin') {
+                // Admin langsung hapus
+                if(confirm("Hapus item ini?")) {
+                    cart.splice(index, 1);
+                    renderCart();
+                }
+            } else {
+                // Kasir harus input password
+                const pass = prompt("HAPUS BARANG: Masukkan Password Admin untuk konfirmasi!");
+                
+                if (pass) {
+                    // Validasi ke Server (Agar tidak bisa diintip di Inspect Element)
+                    fetch(SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'verify_admin', password: pass })
+                    })
+                    .then(res => res.json())
+                    .then(response => {
+                        if (response.status === 'success') {
+                            cart.splice(index, 1);
+                            renderCart();
+                            alert("Item berhasil dihapus oleh otorisasi Admin.");
+                        } else {
+                            alert("PASSWORD ADMIN SALAH! Penghapusan ditolak.");
+                        }
+                    })
+                    .catch(err => alert("Gagal koneksi ke server validasi."));
+                }
+            }
         }
 
         function prosesLogin() {
@@ -251,8 +279,6 @@
             if(produk) { const ada = cart.find(i => i.id == input.value); if(ada) ada.qty++; else cart.push({...produk, qty:1}); renderCart(); input.value = ""; input.focus(); } else { alert("404 Not Found"); }
         }
         function updateQty(idx, num) { cart[idx].qty += num; if(cart[idx].qty < 1) cart[idx].qty = 1; renderCart(); }
-        function hapusItem(idx) { cart.splice(idx, 1); renderCart(); }
     </script>
 </body>
 </html>
-
