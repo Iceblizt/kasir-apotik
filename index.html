@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KASIR APOTIK PRO</title>
     <style>
-        /* === STYLE UTAMA === */
+        /* === STYLE UTAMA (TIDAK BERUBAH BANYAK) === */
         body { font-family: 'Courier New', Courier, monospace; background: #e0e0e0; padding: 20px; }
         .box { max-width: 750px; margin: 0 auto; background: #fff; padding: 25px; border: 3px solid #000; box-shadow: 5px 5px 0px #000; }
         h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 0; }
@@ -29,21 +29,22 @@
         .total-box { font-size: 20px; font-weight: bold; text-align: right; padding: 10px; background: #eee; border: 2px solid #000; }
         .status-badge { display: inline-block; padding: 5px 10px; background: #000; color: #fff; font-size: 12px; margin-bottom: 15px; }
 
-        /* === MODAL PASSWORD CUSTOM (BARU) === */
-        #modal-overlay {
+        /* === MODAL PASSWORD & PAYMENT (CUSTOM) === */
+        .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000;
             display: flex; justify-content: center; align-items: center;
         }
         .modal-box {
-            background: white; padding: 20px; border: 3px solid black; width: 300px; text-align: center;
+            background: white; padding: 20px; border: 3px solid black; width: 350px; text-align: center;
         }
+        .big-text { font-size: 24px; font-weight: bold; margin: 10px 0; display: block; }
 
-        /* === PRINT SESUAI KLINIK HEBAT === */
+        /* === PRINT CSS (YANG DIREQUEST) === */
         #printable-area { display: none; } 
         @media print {
             body * { visibility: hidden; }
-            #screen-login, #screen-app, .box, #modal-overlay { display: none !important; }
+            #screen-login, #screen-app, .box, .modal-overlay { display: none !important; }
             #printable-area, #printable-area * { visibility: visible !important; display: block !important; }
             
             #printable-area { 
@@ -53,27 +54,46 @@
             }
             @page { size: 58mm auto; margin: 0mm; }
             
-            .struk-font { font-family: 'Courier New', Courier, monospace; font-size: 10px; line-height: 1.2; color: #000; }
+            .struk-font { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; color: #000; }
             
-            /* Layout Klinik Hebat */
-            .header-left { text-align: left; margin-bottom: 5px; }
+            /* === PERUBAHAN UI STRUK === */
+            .text-center { text-align: center !important; }
+            .text-right { text-align: right !important; }
+            .flex-between { display: flex !important; justify-content: space-between !important; }
             .dashed-line { border-bottom: 1px dashed black; margin: 5px 0; }
-            .item-line { margin-bottom: 2px; }
-            .item-details { display: flex !important; justify-content: space-between !important; }
-            .total-section { display: flex !important; justify-content: space-between !important; font-weight: bold; margin-top: 5px; }
+            .item-line { margin-bottom: 5px; }
+            .bold { font-weight: bold; }
         }
     </style>
 </head>
 <body>
 
-    <div id="modal-overlay" class="hidden">
+    <div id="modal-pass" class="modal-overlay hidden">
         <div class="modal-box">
             <h3>PASSWORD ADMIN</h3>
-            <p>Masukkan password untuk menghapus:</p>
             <input type="password" id="admin-pass-input" placeholder="***">
             <div style="display: flex; gap: 5px;">
-                <button onclick="batalHapus()" style="background: #ccc; color: black;">BATAL</button>
+                <button onclick="closeModal('modal-pass')" style="background: #ccc; color: black;">BATAL</button>
                 <button onclick="konfirmasiHapus()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-cash" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>PEMBAYARAN TUNAI</h3>
+            <div style="text-align: left;">Total Tagihan:</div>
+            <span id="cash-total-label" class="big-text">Rp 0</span>
+            
+            <div style="text-align: left;">Uang Diterima:</div>
+            <input type="number" id="cash-input" placeholder="Masukkan Nominal" onkeyup="hitungKembalian()">
+            
+            <div style="text-align: left;">Kembalian:</div>
+            <span id="cash-change-label" class="big-text" style="color: blue;">Rp 0</span>
+
+            <div style="display: flex; gap: 5px; margin-top: 15px;">
+                <button onclick="closeModal('modal-cash')" style="background: #ccc; color: black;">BATAL</button>
+                <button id="btn-process-cash" onclick="prosesTransaksiFinal(true)" disabled>BAYAR & CETAK</button>
             </div>
         </div>
     </div>
@@ -120,13 +140,13 @@
         </select>
         <br>
         
-        <button id="btn-bayar" onclick="transaksiDanPrint()" style="background: #000; height: 50px; font-size: 18px;">
+        <button id="btn-bayar" onclick="cekMetodeBayar()" style="background: #000; height: 50px; font-size: 18px;">
             BAYAR & CETAK STRUK
         </button>
     </div>
 
     <div id="printable-area" class="struk-font">
-        <div class="header-left">
+        <div class="text-center" style="margin-bottom: 5px;">
             <b style="font-size: 12px;">APOTIK SEHAT</b><br>
             Jl. Raya No. 123, Jakarta<br>
             Telp: (021) 12345678
@@ -134,35 +154,39 @@
 
         <div class="dashed-line"></div>
         
-        <div style="display: flex; justify-content: space-between;">
-            <span>Nama</span>
-            <span>Total</span>
+        <div style="font-size: 10px;">
+            Tgl: <span id="struk-date"></span><br>
+            No: <b id="struk-trx-id"></b><br>
+            Kasir: <span id="struk-kasir"></span><br>
+            Bayar: <b id="struk-payment"></b>
         </div>
-
+        
         <div class="dashed-line"></div>
         
         <div id="struk-items"></div>
         
         <div class="dashed-line"></div>
         
-        <div class="total-section">
-            <span>Total</span>
-            <span id="struk-total">0</span>
+        <div class="flex-between bold" style="margin-top: 5px;">
+            <span>TOTAL:</span>
+            <span id="struk-total">0</span> </div>
+        
+        <div id="struk-cash-details" style="display: none;">
+            <div class="flex-between">
+                <span>Tunai:</span>
+                <span id="struk-tunai">0</span>
+            </div>
+            <div class="flex-between">
+                <span>Kembali:</span>
+                <span id="struk-kembali">0</span>
+            </div>
         </div>
-        <div class="total-section">
-            <span>Metode</span>
-            <span id="struk-payment">CASH</span>
-        </div>
-        <div class="total-section">
-            <span>Kembali</span>
-            <span>0</span> </div>
 
         <div class="dashed-line"></div>
         <br>
-        <div style="text-align: left;">
-            <span id="struk-trx-id"></span><br>
-            <span id="struk-date"></span> Opr: <span id="struk-kasir"></span><br>
-            Terima kasih atas kunjungan anda
+        <div class="text-center" style="font-size: 10px;">
+            *Terima Kasih*<br>
+            *Barang yg dibeli tidak bisa ditukar*
         </div>
     </div>
 
@@ -172,20 +196,66 @@
         let productDatabase = []; 
         let cart = [];
         let currentUser = '';
-        let itemToDeleteIndex = null; // Variabel simpan sementara index yg mau dihapus
+        let itemToDeleteIndex = null;
+        let grandTotal = 0;
+        let uangTunai = 0;
+        let uangKembali = 0;
 
         window.onload = function() { loadProducts(); };
         function loadProducts() { fetch(SCRIPT_URL).then(r => r.json()).then(d => productDatabase = d).catch(e => console.log("Offline")); }
 
-        function transaksiDanPrint() {
+        // === LOGIC BARU: CEK METODE BAYAR ===
+        function cekMetodeBayar() {
             if (cart.length === 0) return alert("Keranjang Kosong!");
+            const payMethod = document.getElementById('payment-method').value;
+
+            if (payMethod === 'CASH') {
+                // BUKA MODAL CASH
+                document.getElementById('modal-cash').classList.remove('hidden');
+                document.getElementById('cash-total-label').innerText = "Rp " + grandTotal.toLocaleString();
+                document.getElementById('cash-input').value = "";
+                document.getElementById('cash-change-label').innerText = "Rp 0";
+                document.getElementById('btn-process-cash').disabled = true;
+                document.getElementById('cash-input').focus();
+            } else {
+                // LANGSUNG PROSES (NON-CASH)
+                uangTunai = 0; 
+                uangKembali = 0;
+                prosesTransaksiFinal(false);
+            }
+        }
+
+        // === HITUNG KEMBALIAN DI MODAL ===
+        function hitungKembalian() {
+            const inputVal = document.getElementById('cash-input').value;
+            uangTunai = Number(inputVal);
+            uangKembali = uangTunai - grandTotal;
+
+            document.getElementById('cash-change-label').innerText = "Rp " + uangKembali.toLocaleString();
+
+            const btn = document.getElementById('btn-process-cash');
+            if (uangTunai >= grandTotal) {
+                document.getElementById('cash-change-label').style.color = "blue";
+                btn.disabled = false;
+                btn.style.background = "#000";
+            } else {
+                document.getElementById('cash-change-label').style.color = "red";
+                btn.disabled = true;
+                btn.style.background = "#555";
+            }
+        }
+
+        // === FINALISASI TRANSAKSI (DIPANGGIL DARI MODAL ATAU TOMBOL UTAMA) ===
+        function prosesTransaksiFinal(isCash) {
+            if (isCash) closeModal('modal-cash');
+
             const btn = document.getElementById('btn-bayar');
             const originalText = btn.innerText;
             const payMethod = document.getElementById('payment-method').value;
             
             const now = new Date();
             const uniqueCode = Math.floor(100 + Math.random() * 900);
-            const trxId = "A" + now.getDate() + (now.getMonth()+1) + uniqueCode; // Format ala Klinik Hebat
+            const trxId = "A" + now.getDate() + (now.getMonth()+1) + uniqueCode;
 
             btn.innerText = "PROSES..."; btn.disabled = true; btn.style.background = "#555";
 
@@ -197,7 +267,7 @@
             .then(response => {
                 if(response.status === 'success') {
                     btn.innerText = "MENCETAK...";
-                    siapkanStruk(payMethod, trxId);
+                    siapkanStruk(payMethod, trxId, isCash);
                     setTimeout(() => {
                         window.print();
                         alert("Sukses!");
@@ -212,46 +282,53 @@
             });
         }
 
-        // === RENDER STRUK ALA KLINIK HEBAT ===
-        function siapkanStruk(metodeBayar, idTransaksi) {
+        // === RENDER STRUK (LAYOUT BARU) ===
+        function siapkanStruk(metodeBayar, idTransaksi, isCash) {
             const now = new Date();
-            // Format Tanggal DD/MM/YYYY HH:MM
             const dateStr = now.getDate().toString().padStart(2,'0') + "/" + (now.getMonth()+1).toString().padStart(2,'0') + "/" + now.getFullYear() + " " + now.getHours() + ":" + now.getMinutes();
 
             document.getElementById('struk-date').innerText = dateStr;
             document.getElementById('struk-trx-id').innerText = idTransaksi;
-            document.getElementById('struk-kasir').innerText = currentUser; // Admin/Kasir biasa (bukan Uppercase biar mirip contoh)
+            document.getElementById('struk-kasir').innerText = currentUser;
             document.getElementById('struk-payment').innerText = metodeBayar;
             
             const container = document.getElementById('struk-items');
             container.innerHTML = "";
-            let total = 0;
             
             cart.forEach(item => {
                 const subtotal = item.price * item.qty;
-                total += subtotal;
-                
-                // Format:
-                // NAMABARANG
-                // Harga x Qty              Subtotal
+                // UI BARU: Subtotal Rata Kanan
                 container.innerHTML += `
                     <div class="item-line">
                         <div>${item.name.toUpperCase()}</div>
-                        <div class="item-details">
+                        <div class="flex-between">
                             <span>${parseInt(item.price).toLocaleString()} x ${item.qty}</span>
-                            <span>${subtotal.toLocaleString()}</span>
+                            <span class="text-right">${subtotal.toLocaleString()}</span>
                         </div>
                     </div>`;
             });
-            document.getElementById('struk-total').innerText = total.toLocaleString();
+            
+            // Total Keseluruhan Rata Kanan
+            document.getElementById('struk-total').innerText = "Rp " + grandTotal.toLocaleString();
+
+            // Tampilkan Detail Cash Jika Perlu
+            const cashDiv = document.getElementById('struk-cash-details');
+            if (isCash) {
+                cashDiv.style.display = "block";
+                document.getElementById('struk-tunai').innerText = uangTunai.toLocaleString();
+                document.getElementById('struk-kembali').innerText = uangKembali.toLocaleString();
+            } else {
+                cashDiv.style.display = "none";
+            }
         }
 
         function renderCart() {
-            const tbody = document.getElementById('cart-list'); tbody.innerHTML = ""; let total = 0;
+            const tbody = document.getElementById('cart-list'); tbody.innerHTML = ""; 
+            grandTotal = 0; // Reset Global Total
+            
             cart.forEach((item, i) => {
-                total += (item.price * item.qty);
+                grandTotal += (item.price * item.qty);
                 let btnDel = `<button class="btn-delete" onclick="mintaHapus(${i})">X</button>`;
-                
                 tbody.innerHTML += `
                     <tr>
                         <td>${item.name}</td>
@@ -266,50 +343,35 @@
                         <td style="text-align:center;">${btnDel}</td>
                     </tr>`;
             });
-            document.getElementById('total-text').innerText = "Total: Rp " + total.toLocaleString();
+            document.getElementById('total-text').innerText = "Total: Rp " + grandTotal.toLocaleString();
         }
 
-        // === LOGIC HAPUS + MODAL ===
+        // === MODAL UTILS ===
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        // === HAPUS ITEM (DENGAN SENSOR PASSWORD) ===
         function mintaHapus(index) {
             if (currentUser === 'admin') {
                 if(confirm("Hapus item?")) { cart.splice(index, 1); renderCart(); }
             } else {
-                // TAMPILKAN MODAL PASSWORD
                 itemToDeleteIndex = index;
-                document.getElementById('admin-pass-input').value = ""; // Reset input
-                document.getElementById('modal-overlay').classList.remove('hidden');
+                document.getElementById('admin-pass-input').value = ""; 
+                document.getElementById('modal-pass').classList.remove('hidden');
                 document.getElementById('admin-pass-input').focus();
             }
         }
-
-        function batalHapus() {
-            document.getElementById('modal-overlay').classList.add('hidden');
-            itemToDeleteIndex = null;
-        }
-
         function konfirmasiHapus() {
             const pass = document.getElementById('admin-pass-input').value;
             if(!pass) return;
-
-            fetch(SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'verify_admin', password: pass })
-            })
-            .then(res => res.json())
-            .then(response => {
+            fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'verify_admin', password: pass }) })
+            .then(res => res.json()).then(response => {
                 if (response.status === 'success') {
-                    cart.splice(itemToDeleteIndex, 1);
-                    renderCart();
-                    batalHapus();
-                } else {
-                    alert("PASSWORD SALAH!");
-                    document.getElementById('admin-pass-input').value = "";
-                }
-            })
-            .catch(err => alert("Gagal koneksi."));
+                    cart.splice(itemToDeleteIndex, 1); renderCart(); closeModal('modal-pass');
+                } else { alert("PASSWORD SALAH!"); document.getElementById('admin-pass-input').value = ""; }
+            }).catch(err => alert("Gagal koneksi."));
         }
 
-        // Logic Standar Lainnya
+        // === LOGIN/LOGOUT/INPUT ===
         function prosesLogin() {
             const user = document.getElementById('login-user').value; const pass = document.getElementById('login-pass').value;
             const btn = document.getElementById('btn-login');
