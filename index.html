@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KASIR APOTIK PRO</title>
     <style>
-        /* === STYLE UTAMA (LAYAR) === */
+        /* === STYLE UTAMA (TIDAK DISENTUH) === */
         body { font-family: 'Courier New', Courier, monospace; background: #e0e0e0; padding: 20px; }
         .box { max-width: 750px; margin: 0 auto; background: #fff; padding: 25px; border: 3px solid #000; box-shadow: 5px 5px 0px #000; }
         h2 { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-top: 0; }
@@ -29,18 +29,18 @@
         .total-box { font-size: 20px; font-weight: bold; text-align: right; padding: 10px; background: #eee; border: 2px solid #000; }
         .status-badge { display: inline-block; padding: 5px 10px; background: #000; color: #fff; font-size: 12px; margin-bottom: 15px; }
 
-        /* === MODAL UTILS === */
+        /* === MODAL UTILS (TIDAK DISENTUH) === */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5); z-index: 1000;
-            display: flex; justify-content center; align-items: center;
+            display: flex; justify-content: center; align-items: center;
         }
         .modal-box {
             background: white; padding: 20px; border: 3px solid black; width: 350px; text-align: center;
         }
         .big-text { font-size: 24px; font-weight: bold; margin: 10px 0; display: block; }
 
-        /* === PRINT CSS (FORCE RIGHT ALIGNMENT) === */
+        /* === PRINT CSS (DIEDIT BAGIAN LAYOUT BARIS) === */
         #printable-area { display: none; } 
         @media print {
             body * { visibility: hidden; }
@@ -56,18 +56,22 @@
             
             .struk-font { font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; color: #000; }
             
-            /* HELPER UTILS KHUSUS PRINT */
+            /* === PERBAIKAN LAYOUT === */
             .text-center { text-align: center; }
             .dashed-line { border-bottom: 1px dashed black; margin: 5px 0; }
             .bold { font-weight: bold; }
-            
-            /* TEKNIK FLOAT: PASTI KANAN */
-            .row-float { overflow: hidden; width: 100%; margin-bottom: 2px; }
-            .pull-left { float: left; }
-            .pull-right { float: right; text-align: right; }
-            
-            /* Rapat tanpa spasi */
             .no-gap { margin: 0; padding: 0; line-height: 1.2; }
+
+            /* CLASS BARU: MEMAKSA KANAN-KIRI SEJAJAR */
+            .print-row {
+                display: flex !important;
+                justify-content: space-between !important; /* Kiri Kanan Mentok */
+                width: 100% !important;
+                margin-bottom: 2px;
+            }
+            
+            /* Khusus Subtotal Item agar Rata Kanan */
+            .text-right { text-align: right; }
         }
     </style>
 </head>
@@ -151,6 +155,9 @@
     </div>
 
     <div id="printable-area" class="struk-font">
+        
+        <br>
+
         <div class="text-center" style="margin-bottom: 5px;">
             <b style="font-size: 12px;">APOTIK SEHAT</b><br>
             Jl. Raya No. 123, Jakarta<br>
@@ -167,18 +174,18 @@
         
         <div class="dashed-line"></div>
         
-        <div class="row-float bold" style="margin-top: 5px;">
-            <span class="pull-left">TOTAL:</span>
-            <span class="pull-right" id="struk-total">0</span>
+        <div class="print-row bold" style="margin-top: 5px;">
+            <span>TOTAL:</span>
+            <span id="struk-total">0</span>
         </div>
         
-        <div class="row-float">
-            <span class="pull-left" id="label-bayar">Tunai:</span>
-            <span class="pull-right" id="val-bayar">0</span>
+        <div class="print-row">
+            <span id="label-bayar">Tunai:</span>
+            <span id="val-bayar">0</span>
         </div>
-        <div class="row-float">
-            <span class="pull-left">Kembali:</span>
-            <span class="pull-right" id="val-kembali">0</span>
+        <div class="print-row">
+            <span>Kembali:</span>
+            <span id="val-kembali">0</span>
         </div>
 
         <div class="dashed-line"></div>
@@ -215,7 +222,6 @@
                 document.getElementById('btn-process-cash').disabled = true;
                 document.getElementById('cash-input').focus();
             } else {
-                // Non-Tunai: Set Uang Tunai = Total (Biar pas), Kembali = 0
                 uangTunai = grandTotal; 
                 uangKembali = 0;
                 prosesTransaksiFinal(false);
@@ -285,13 +291,13 @@
             
             cart.forEach(item => {
                 const subtotal = item.price * item.qty;
-                // UI FIX: Menggunakan FLOAT agar harga pasti kanan
+                // PAKAI CLASS BARU 'print-row'
                 container.innerHTML += `
                     <div style="margin-bottom: 2px;">
                         <div style="font-weight:bold;">${item.name.toUpperCase()}</div>
-                        <div class="row-float">
-                            <span class="pull-left">${parseInt(item.price).toLocaleString()} x ${item.qty}</span>
-                            <span class="pull-right">${subtotal.toLocaleString()}</span>
+                        <div class="print-row">
+                            <span>${parseInt(item.price).toLocaleString()} x ${item.qty}</span>
+                            <span>${subtotal.toLocaleString()}</span>
                         </div>
                     </div>`;
             });
@@ -302,7 +308,6 @@
                 document.getElementById('label-bayar').innerText = "Tunai:";
                 document.getElementById('val-bayar').innerText = uangTunai.toLocaleString();
             } else {
-                // Jika QRIS/Debit, Tulis Metodenya
                 document.getElementById('label-bayar').innerText = metodeBayar + ":";
                 document.getElementById('val-bayar').innerText = grandTotal.toLocaleString();
             }
